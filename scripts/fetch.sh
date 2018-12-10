@@ -5,4 +5,6 @@ fi
 
 cd kubernetes
 git reset --hard HEAD
-git fetch origin refs/tags/${KUBERNETES_VERSION}
+echo ">>>> fetching ${KUBERNETES_VERSION} ..."
+git fetch
+git checkout refs/tags/${KUBERNETES_VERSION}
