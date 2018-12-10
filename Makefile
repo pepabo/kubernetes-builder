@@ -1,5 +1,5 @@
-KUBERNETES_VERSION := v1.9.5
-VERSION := v1.9.5.1
+KUBERNETES_VERSION := v1.10.11
+VERSION := v1.10.11.1
 REGISTRY := docker.io/rtakaishi
 
 fetch:
@@ -11,8 +11,8 @@ patch: clean fetch
 build: patch
 	cd ./kubernetes; KUBE_FASTBUILD=true ARCH=amd64 ./build/run.sh make cross
 
-push: build
-	cd ./kubernetes/cluster/images/hyperkube; REGISTRY=$(REGISTORY) VERSION=$(VERSION) ARCH=amd64 make push
+push:
+	cd ./kubernetes/cluster/images/hyperkube; REGISTRY=$(REGISTRY) VERSION=$(VERSION) ARCH=amd64 make push
 
 clean:
 	cd ./kubernetes && git reset --hard HEAD && git clean -fd
