@@ -1,0 +1,62 @@
+diff --git a/pkg/cloudprovider/providers/openstack/openstack_loadbalancer.go b/pkg/cloudprovider/providers/openstack/openstack_loadbalancer.go
+index b4f3dee543..5408387255 100644
+--- a/pkg/cloudprovider/providers/openstack/openstack_loadbalancer.go
++++ b/pkg/cloudprovider/providers/openstack/openstack_loadbalancer.go
+@@ -761,6 +761,29 @@ func (lbaas *LbaasV2) EnsureLoadBalancer(ctx context.Context, clusterName string
+ 		return nil, fmt.Errorf("failed to loadbalance ACTIVE provisioning status %v: %v", provisioningStatus, err)
+ 	}
+
++	portID := loadbalancer.VipPortID
++	floatIP, err := getFloatingIPByPortID(lbaas.network, portID)
++	if err != nil && err != ErrNotFound {
++		return nil, fmt.Errorf("error getting floating ip for port %s: %v", portID, err)
++	}
++	if floatIP == nil && floatingPool != "" && !internalAnnotation {
++		glog.V(4).Infof("Creating floating ip for loadbalancer %s port %s", loadbalancer.ID, portID)
++		floatIPOpts := floatingips.CreateOpts{
++			FloatingNetworkID: floatingPool,
++			PortID:            portID,
++		}
++
++		loadBalancerIP := apiService.Spec.LoadBalancerIP
++		if loadBalancerIP != "" {
++			floatIPOpts.FloatingIP = loadBalancerIP
++		}
++
++		floatIP, err = floatingips.Create(lbaas.network, floatIPOpts).Extract()
++		if err != nil {
++			return nil, fmt.Errorf("error creating LB floatingip %+v: %v", floatIPOpts, err)
++		}
++	}
++
+ 	lbmethod := v2pools.LBMethod(lbaas.opts.LBMethod)
+ 	if lbmethod == "" {
+ 		lbmethod = v2pools.LBMethodRoundRobin
+@@ -965,28 +988,6 @@ func (lbaas *LbaasV2) EnsureLoadBalancer(ctx context.Context, clusterName string
+ 		glog.V(2).Infof("Deleted obsolete listener: %s", listener.ID)
+ 	}
+
+-	portID := loadbalancer.VipPortID
+-	floatIP, err := getFloatingIPByPortID(lbaas.network, portID)
+-	if err != nil && err != ErrNotFound {
+-		return nil, fmt.Errorf("error getting floating ip for port %s: %v", portID, err)
+-	}
+-	if floatIP == nil && floatingPool != "" && !internalAnnotation {
+-		glog.V(4).Infof("Creating floating ip for loadbalancer %s port %s", loadbalancer.ID, portID)
+-		floatIPOpts := floatingips.CreateOpts{
+-			FloatingNetworkID: floatingPool,
+-			PortID:            portID,
+-		}
+-
+-		loadBalancerIP := apiService.Spec.LoadBalancerIP
+-		if loadBalancerIP != "" {
+-			floatIPOpts.FloatingIP = loadBalancerIP
+-		}
+-
+-		floatIP, err = floatingips.Create(lbaas.network, floatIPOpts).Extract()
+-		if err != nil {
+-			return nil, fmt.Errorf("error creating LB floatingip %+v: %v", floatIPOpts, err)
+-		}
+-	}
+
+ 	status := &v1.LoadBalancerStatus{}

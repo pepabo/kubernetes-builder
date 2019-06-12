@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-for file in `ls ./patch` ; do
+version=$1
+for file in `ls ./patch/${version}` ; do
   echo "apply patch: ${file}"
-  patch -d ./kubernetes -p1 < ./patch/${file}
+  patch -d ./kubernetes -p1 < ./patch/${version}/${file}
 done
